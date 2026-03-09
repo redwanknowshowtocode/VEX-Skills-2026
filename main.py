@@ -1,3 +1,4 @@
+#endregion VEXcode Generated Robot Configuration
 # ---------------------------------------------------------------------------- #
 #                                                                              #
 # 	Module:       main.py                                                      #
@@ -43,22 +44,21 @@ def drive_task():
     # place driver control in this while loop
     while True:
         wait(20, MSEC)
-        drive_left = controller.axis3.position()
+        drive_left = controller.axis3.position() + 15
         drive_right = controller.axis2.position() + 5
 
-        deadband = 15
+        deadband = 16
         if abs(drive_left) < deadband:
             drive_left = 0
         if abs(drive_right) < deadband:
             drive_right = 0
 
-        # The drivetrain
-       # Base.drive(drive_left, drive_right, PERCENT) #this is the command to control the drive train, it takes in the left and right values and the units (percent in this case)
+
+        #Base.drive(FORWARD) #this is the command to control the drive train, it takes in the left and right values and the units (percent in this case)
         motorL1.spin(FORWARD, drive_left, PERCENT)
         motorL2.spin(FORWARD, drive_left, PERCENT)
         motorR3.spin(FORWARD, drive_right, PERCENT)
         motorR4.spin(FORWARD, drive_right, PERCENT)
-        
 
         sleep(5)
      
