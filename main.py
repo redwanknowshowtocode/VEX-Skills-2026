@@ -11,6 +11,7 @@
         
 # Library imports
 from vex import *
+import math
 
 brain = Brain()
 controller = Controller()
@@ -25,10 +26,43 @@ left_motor = MotorGroup(motorL1, motorL2,)
 right_motor = MotorGroup(motorR3, motorR4, )
 Base = DriveTrain(left_motor, right_motor) #sets the drive train to use the four motors
 
+
+#odometry variables
+x = 0.0
+y = 0.0
+theta = 0.0 #measured in radians
+wheel_radius = 2 #in inches
+circumference = 2 * math.pi * wheel_radius
+IMU = Inertial(Ports.PORT20) #this is the inertial sensor, it will be used to get the robot's heading
+rotation_sensor = Rotation(Ports.PORT19) #this is the rotation sensor, it will be used to get the distance traveled by the robot
+
+
+
+def update_position():
+    global x, y, theta, previous_degree
+    # 1. Distance from tracking wheel
+    curr_deg = rotation_sensor.position()
+    prev_deg = curr_deg
+    delta_deg = curr_deg - prev_deg
+    
+
+    delta_rot = delta_deg / 360.0
+    delta_s = delta_rot * circumference  # forward distance in inches
+
+    # 2. Heading from IMU
+    theta = math.radians(IMU.rotation())
+
+    # 3. Convert local movement to global movement
+    dx = delta_s * math.cos(theta)
+    dy = delta_s * math.sin(theta)
+    # 4. Update global position
+    x += dx
+    y += dy
+
 def autonomous():
     brain.screen.clear_screen()
     brain.screen.print("autonomous code")
-    # place automonous code here
+   
 
 def user_control():
     brain.screen.clear_screen()
