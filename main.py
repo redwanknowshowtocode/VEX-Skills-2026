@@ -18,10 +18,10 @@ controller = Controller()
 
 #these are the motor for the drive train, you can change the ports and gear settings as needed but the default gear setting is 18:1 and the default direction is forward (false)
 #SmartDrive will be set up later
-motorL1 = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
-motorL2 = Motor(Ports.PORT12, GearSetting.RATIO_18_1, False)
-motorR1 = Motor(Ports.PORT19, GearSetting.RATIO_18_1, True)
-motorR2 = Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
+motorL1 = Motor(Ports.PORT11, GearSetting.RATIO_6_1, False)
+motorL2 = Motor(Ports.PORT12, GearSetting.RATIO_6_1, False)
+motorR1 = Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
+motorR2 = Motor(Ports.PORT20, GearSetting.RATIO_6_1, True)
 #odometry variables
 x = 0.0
 y = 0.0
@@ -30,6 +30,14 @@ wheel_radius = 2 #in inches
 circumference = 2 * math.pi * wheel_radius
 IMU = Inertial(Ports.PORT6) #this is the inertial sensor, it will be used to get the robot's heading
 rotation_sensor = Rotation(Ports.PORT18) #this is the rotation sensor, it will be used to get the distance traveled by the robot
+
+#intake motors
+Intake_motor_bottom = Motor(Ports.PORT3, GearSetting.RATIO_6_1, True)
+Intake_motor_top1 = Motor(Ports.PORT1, GearSetting.RATIO_6_1, True)
+Intake_motor_top2= Motor(Ports.PORT10, GearSetting.RATIO_6_1, True)
+
+
+
 
 
 
@@ -55,7 +63,7 @@ def update_position():
     y += dy
 
 def turn_to_angle(target_angle):
-    Kp = 0.8  # proportional gain, tune this
+    Kp = 0.5  # proportional gain, tune this
 
     while True:
         current = IMU.rotation()
@@ -146,7 +154,7 @@ def autonomous():
     brain.screen.print("autonomous code")
 
     #a standard vex field is 12ft by 12ft, which is 144 inches by 144 inches, so the max distance the robot can travel in one direction is 144 inches but we are positioned at the bottom middle so we account for that value being at (72,0)
-    go_to_point(72, 144 )
+    go_to_point(72, 144)
     go_to_point(-72, 144)
     go_to_point(-72, 0)
     go_to_point(72, 0)
@@ -185,7 +193,30 @@ def drive_task():
         motorR2.spin(FORWARD, drive_right, PERCENT)
 
         sleep(5)
-     
+
+def intake_task():
+    #this is where you would put the code to control the intake, it would be similar to the drive task but with different motors and controls
+    while True:
+        wait(20, MSEC)
+        if controller.buttonL1.pressing():
+            Intake_motor_bottom.spin(FORWARD, 100, PERCENT)
+        elif controller.buttonL2.pressing():
+            Intake_motor_bottom.spin(REVERSE, 100, PERCENT)            
+        elif controller.buttonR1.pressing():
+            Intake_motor_top1.spin(FORWARD, 100, PERCENT)
+            Intake_motor_top2.spin(FORWARD, 100, PERCENT)
+        elif controller.buttonR2.pressing():
+            Intake_motor_top1.spin(REVERSE, 100, PERCENT)
+            Intake_motor_top2.spin(REVERSE, 100, PERCENT)
+        
+        elif controller.buttonA.pressing():
+            Intake_motor_top2.spin
+        else:
+            Intake_motor_bottom.stop()
+            Intake_motor_top1.stop()
+            Intake_motor_top2.stop()
+
+
 # create competition instance
 comp = Competition(user_control, autonomous)
 
@@ -193,5 +224,6 @@ comp = Competition(user_control, autonomous)
 brain.screen.clear_screen()
 
 # run the drive task as a separate thread so that it can run at the same time as the user control and autonomous functions
+#task2 = Thread(autonomous)
 task1 = Thread(drive_task)
-task2 = Thread(autonomous)
+task3 = Thread(intake_task)
