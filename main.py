@@ -20,8 +20,8 @@ controller = Controller()
 #SmartDrive will be set up later
 motorL1 = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
 motorL2 = Motor(Ports.PORT12, GearSetting.RATIO_18_1, False)
-motorR3 = Motor(Ports.PORT19, GearSetting.RATIO_18_1, True)
-motorR4 = Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
+motorR1 = Motor(Ports.PORT19, GearSetting.RATIO_18_1, True)
+motorR2 = Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
 #odometry variables
 x = 0.0
 y = 0.0
@@ -55,44 +55,104 @@ def update_position():
     y += dy
 
 def turn_to_angle(target_angle):
-    current_angle = IMU.heading
-    error = target_angle - current_angle
-    while abs(error) > 2:  # Allowable error of 2 degree
-        turn_speed = max(min(error * 0.5, 100), -100)  # Proportional control
-        motorL1.spin(FORWARD, turn_speed, PERCENT)
-        motorL2.spin(FORWARD, turn_speed, PERCENT)
-        motorR3.spin(FORWARD, -turn_speed, PERCENT)
-        motorR4.spin(FORWARD, -turn_speed, PERCENT)
-        wait(20, MSEC)
-        current_angle = IMU.heading
-        error = target_angle - current_angle
+    Kp = 0.8  # proportional gain, tune this
 
-def drive_straight(distance): 
-    rotation_sensor.reset_position()
-    IMU.reset_heading()
-    target_distance = distance
-
-    deadband = 1 #to keep the heading straight and locked while it drives straight, we have a deadband
     while True:
-        if abs(IMU.heading()) < deadband:
+        current = IMU.rotation()
+        error = target_angle - current
+
+        # Stop when close enough
+        if abs(error) < 1:
+            break
+
+        turn_power = Kp * error
+
+        motorL1.spin(FORWARD, -turn_power, PERCENT)
+        motorL2.spin(FORWARD, -turn_power, PERCENT)
+
+        motorR1.spin(FORWARD, turn_power, PERCENT)
+        motorR2.spin(FORWARD, turn_power, PERCENT)
 
 
+        wait(20, MSEC)
+
+    motorL1.stop()
+    motorL2.stop()
+    motorR1.stop()
+    motorR2.stop()
+
+def drive_straight(distance):
+    global x, y
+
+    # Reset tracking wheel reference
+    start_x = x
+    start_y = y
+
+    # Lock heading
+    target_heading = IMU.rotation()
+    Kp = 0.6
+
+    while True:
+        update_position()
+
+        # How far have we traveled?
+        dx = x - start_x
+        dy = y - start_y
+        traveled = math.sqrt(dx*dx + dy*dy)
+
+        if traveled >= distance:
+            break
+
+        # Heading correction
+        error = target_heading - IMU.rotation()
+        correction = Kp * error
+
+        motorL1.spin(FORWARD, 50 + correction, PERCENT)
+        motorL2.spin(FORWARD, 50 + correction, PERCENT)
+
+        motorR1.spin(FORWARD, 50 - correction, PERCENT)
+        motorR2.spin(FORWARD, 50 - correction, PERCENT)
+
+        wait(20, MSEC)
+
+    motorL1.stop()
+    motorL2.stop()
+
+    motorR1.stop()
+    motorR2.stop()
 
         
 
-def drive_to_point(target_x, target_y):
-    pass
+def go_to_point(target_x, target_y):
+    global x, y
+
+    # 1. Compute angle to target
+    angle = math.degrees(math.atan2(target_y - y, target_x - x))
+
+    # 2. Turn to face that angle
+    turn_to_angle(angle)
+
+    # 3. Compute distance to target
+    dx = target_x - x
+    dy = target_y - y
+    distance = math.sqrt(dx*dx + dy*dy)
+
+    # 4. Drive straight to it
+    drive_straight(distance)
+
 
 def autonomous():
     brain.screen.clear_screen()
     brain.screen.print("autonomous code")
-    origin = (0, 0)
 
     #a standard vex field is 12ft by 12ft, which is 144 inches by 144 inches, so the max distance the robot can travel in one direction is 144 inches but we are positioned at the bottom middle so we account for that value being at (72,0)
-    top_right_corner = (72, 144 )
-    top_left_corner = (-72, 144)
-    bottom_left_corner = (-72, 0)
-    bottom_right_corner = (72, 0)
+    go_to_point(72, 144 )
+    go_to_point(-72, 144)
+    go_to_point(-72, 0)
+    go_to_point(72, 0)
+
+    #test auto
+
 
 def user_control():
     brain.screen.clear_screen()
@@ -121,8 +181,8 @@ def drive_task():
         #Base.drive(FORWARD) #this is the command to control the drive train, it takes in the left and right values and the units (percent in this case)
         motorL1.spin(FORWARD, drive_left, PERCENT)
         motorL2.spin(FORWARD, drive_left, PERCENT)
-        motorR3.spin(FORWARD, drive_right, PERCENT)
-        motorR4.spin(FORWARD, drive_right, PERCENT)
+        motorR1.spin(FORWARD, drive_right, PERCENT)
+        motorR2.spin(FORWARD, drive_right, PERCENT)
 
         sleep(5)
      
@@ -133,5 +193,5 @@ comp = Competition(user_control, autonomous)
 brain.screen.clear_screen()
 
 # run the drive task as a separate thread so that it can run at the same time as the user control and autonomous functions
-#task1 = Thread(drive_task)
-task2 = Thread(drive_straight(10))
+task1 = Thread(drive_task)
+task2 = Thread(autonomous)
