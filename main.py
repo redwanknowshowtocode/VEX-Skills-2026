@@ -31,10 +31,12 @@ circumference = 2 * math.pi * wheel_radius
 IMU = Inertial(Ports.PORT6) #this is the inertial sensor, it will be used to get the robot's heading
 rotation_sensor = Rotation(Ports.PORT18) #this is the rotation sensor, it will be used to get the distance traveled by the robot
 
-#intake motors
-Intake_motor_bottom = Motor(Ports.PORT3, GearSetting.RATIO_6_1, True)
-Intake_motor_top1 = Motor(Ports.PORT1, GearSetting.RATIO_6_1, True)
-Intake_motor_top2= Motor(Ports.PORT10, GearSetting.RATIO_6_1, True)
+#intake motor
+Intake_motor = Motor(Ports.PORT3, GearSetting.RATIO_6_1, True)
+
+#transfer system motors
+transfer_motor_top1 = Motor(Ports.PORT1, GearSetting.RATIO_6_1, True)
+transfer_motor_top2= Motor(Ports.PORT10, GearSetting.RATIO_6_1, True)
 
 
 
@@ -199,22 +201,26 @@ def intake_task():
     while True:
         wait(20, MSEC)
         if controller.buttonL1.pressing():
-            Intake_motor_bottom.spin(FORWARD, 100, PERCENT)
+            Intake_motor.spin(FORWARD, 100, PERCENT)
+        
         elif controller.buttonL2.pressing():
-            Intake_motor_bottom.spin(REVERSE, 100, PERCENT)            
+            Intake_motor.spin(REVERSE, 100, PERCENT)            
+        
         elif controller.buttonR1.pressing():
-            Intake_motor_top1.spin(FORWARD, 100, PERCENT)
-            Intake_motor_top2.spin(FORWARD, 100, PERCENT)
+            transfer_motor_top1.spin(FORWARD, 100, PERCENT)
+            transfer_motor_top2.spin(FORWARD, 100, PERCENT)
+        
         elif controller.buttonR2.pressing():
-            Intake_motor_top1.spin(REVERSE, 100, PERCENT)
-            Intake_motor_top2.spin(REVERSE, 100, PERCENT)
+            transfer_motor_top1.spin(REVERSE, 100, PERCENT)
+            transfer_motor_top2.spin(REVERSE, 100, PERCENT)
         
         elif controller.buttonA.pressing():
-            Intake_motor_top2.spin
+            transfer_motor_top2.spin
+        
         else:
-            Intake_motor_bottom.stop()
-            Intake_motor_top1.stop()
-            Intake_motor_top2.stop()
+            Intake_motor.stop()
+            transfer_motor_top1.stop()
+            transfer_motor_top2.stop()
 
 
 # create competition instance
