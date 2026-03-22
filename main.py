@@ -208,14 +208,15 @@ def intake_task():
         
         elif controller.buttonR1.pressing():
             transfer_motor_top1.spin(FORWARD, 100, PERCENT)
-            transfer_motor_top2.spin(FORWARD, 100, PERCENT)
         
         elif controller.buttonR2.pressing():
             transfer_motor_top1.spin(REVERSE, 100, PERCENT)
-            transfer_motor_top2.spin(REVERSE, 100, PERCENT)
         
         elif controller.buttonA.pressing():
-            transfer_motor_top2.spin
+            transfer_motor_top2.spin(FORWARD, 100, PERCENT)
+        
+        elif controller.buttonB.pressing():
+            transfer_motor_top2.spin(REVERSE, 100, PERCENT)
         
         else:
             Intake_motor.stop()
