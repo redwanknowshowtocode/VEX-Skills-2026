@@ -101,7 +101,7 @@ def drive_straight(distance):
 
     # Lock heading
     target_heading = IMU.rotation()
-    Kp = 0.6
+    Kp = 0.5
 
     while True:
         update_position()
@@ -121,8 +121,8 @@ def drive_straight(distance):
         motorL1.spin(FORWARD, 50 + correction, PERCENT)
         motorL2.spin(FORWARD, 50 + correction, PERCENT)
 
-        motorR1.spin(FORWARD, 50 - correction, PERCENT)
-        motorR2.spin(FORWARD, 50 - correction, PERCENT)
+        motorR1.spin(REVERSE, 50 - correction, PERCENT)
+        motorR2.spin(REVERSE, 50 - correction, PERCENT)
 
         wait(20, MSEC)
 
