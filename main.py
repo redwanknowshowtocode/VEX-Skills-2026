@@ -78,8 +78,8 @@ def turn_to_angle(target_angle):
 
         turn_power = Kp * error
 
-        motorL1.spin(FORWARD, -turn_power, PERCENT)
-        motorL2.spin(FORWARD, -turn_power, PERCENT)
+        motorL1.spin(FORWARD, turn_power, PERCENT)
+        motorL2.spin(FORWARD, turn_power, PERCENT)
 
         motorR1.spin(FORWARD, turn_power, PERCENT)
         motorR2.spin(FORWARD, turn_power, PERCENT)
