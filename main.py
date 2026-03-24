@@ -27,6 +27,7 @@ x = 0.0
 y = 0.0
 theta = 0.0 #measured in radians
 wheel_radius = 2 #in inches
+prev_degree = 0
 circumference = 2 * math.pi * wheel_radius
 IMU = Inertial(Ports.PORT6) #this is the inertial sensor, it will be used to get the robot's heading
 rotation_sensor = Rotation(Ports.PORT18) #this is the rotation sensor, it will be used to get the distance traveled by the robot
@@ -44,11 +45,11 @@ transfer_motor_top2= Motor(Ports.PORT10, GearSetting.RATIO_6_1, True)
 
 
 def update_position():
-    global x, y, theta, previous_degree
+    global x, y, theta, prev_degree
     # 1. Distance from tracking wheel
     curr_deg = rotation_sensor.position()
-    prev_deg = curr_deg
     delta_deg = curr_deg - prev_deg
+    prev_deg = curr_deg
     
 
     delta_rot = delta_deg / 360.0
