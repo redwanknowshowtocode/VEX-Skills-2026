@@ -1,3 +1,40 @@
+#region VEXcode Generated Robot Configuration
+from vex import *
+import urandom
+import math
+
+# Brain should be defined by default
+brain=Brain()
+
+# Robot configuration code
+
+
+# wait for rotation sensor to fully initialize
+wait(30, MSEC)
+
+
+# Make random actually random
+def initializeRandomSeed():
+    wait(100, MSEC)
+    random = brain.battery.voltage(MV) + brain.battery.current(CurrentUnits.AMP) * 100 + brain.timer.system_high_res()
+    urandom.seed(int(random))
+      
+# Set random seed 
+initializeRandomSeed()
+
+
+def play_vexcode_sound(sound_name):
+    # Helper to make playing sounds from the V5 in VEXcode easier and
+    # keeps the code cleaner by making it clear what is happening.
+    print("VEXPlaySound:" + sound_name)
+    wait(5, MSEC)
+
+# add a small delay to make sure we don't print in the middle of the REPL header
+wait(200, MSEC)
+# clear the console to make sure we don't have the REPL in the console
+print("\033[2J")
+
+#endregion VEXcode Generated Robot Configuration
 #endregion VEXcode Generated Robot Configuration
 # ---------------------------------------------------------------------------- #
 #                                                                              #
@@ -27,7 +64,7 @@ x = 0.0
 y = 0.0
 theta = 0.0 #measured in radians
 wheel_radius = 2 #in inches
-prev_degree = 0
+prev_deg = 0
 circumference = 2 * math.pi * wheel_radius
 IMU = Inertial(Ports.PORT6) #this is the inertial sensor, it will be used to get the robot's heading
 rotation_sensor = Rotation(Ports.PORT18) #this is the rotation sensor, it will be used to get the distance traveled by the robot
@@ -45,7 +82,7 @@ transfer_motor_top2= Motor(Ports.PORT10, GearSetting.RATIO_6_1, True)
 
 
 def update_position():
-    global x, y, theta, prev_degree
+    global x, y, theta, prev_deg
     # 1. Distance from tracking wheel
     curr_deg = rotation_sensor.position()
     delta_deg = curr_deg - prev_deg
@@ -76,10 +113,15 @@ def turn_to_angle(target_angle):
         if abs(error) < 1:
             break
 
+        #slows down as we get closer to the needed angle
         turn_power = Kp * error
 
-        motorL1.spin(FORWARD, turn_power, PERCENT)
-        motorL2.spin(FORWARD, turn_power, PERCENT)
+        #just in case the turn power stalls, we add more power depending on the error value (overshoots or undershoots)
+        if abs(turn_power) < 10:
+            turn_power = 10 * (1 if error > 0 else -1)
+
+        motorL1.spin(FORWARD, -turn_power, PERCENT)
+        motorL2.spin(FORWARD, -turn_power, PERCENT)
 
         motorR1.spin(FORWARD, turn_power, PERCENT)
         motorR2.spin(FORWARD, turn_power, PERCENT)
@@ -98,9 +140,12 @@ def drive_straight(distance):
     # Reset tracking wheel reference
     start_x = x
     start_y = y
+    brain.screen.print("this is the start position ", start_x, start_y)
+
 
     # Lock heading
     target_heading = IMU.rotation()
+    brain.screen.print("this is the target_heading ", target_heading)
     Kp = 0.5
 
     while True:
@@ -110,21 +155,34 @@ def drive_straight(distance):
         dx = x - start_x
         dy = y - start_y
         traveled = math.sqrt(dx*dx + dy*dy)
+        brain.screen.print("this is the traveled distance: ")
+
+        remaining = distance - traveled
+
+        # Minimum and maximum speeds to fix speed when its coming near distance
+        max_speed = 50
+        min_speed = 5
+
+        # Slow down when close but we have a min there so it does not stall
+        speed = max(min_speed, max_speed * (remaining / distance))
 
         if traveled >= distance:
+            brain.screen.print("this is the end of the function")
             break
 
         # Heading correction
         error = target_heading - IMU.rotation()
         correction = Kp * error
+        
+        
+        brain.screen.print("now driving forwards")
+        motorL1.spin(FORWARD, speed + correction, PERCENT)
+        motorL2.spin(FORWARD, speed + correction, PERCENT)
 
-        motorL1.spin(FORWARD, 50 + correction, PERCENT)
-        motorL2.spin(FORWARD, 50 + correction, PERCENT)
+        motorR1.spin(FORWARD, speed - correction, PERCENT)
+        motorR2.spin(FORWARD, speed - correction, PERCENT)
 
-        motorR1.spin(REVERSE, 50 - correction, PERCENT)
-        motorR2.spin(REVERSE, 50 - correction, PERCENT)
-
-        wait(20, MSEC)
+        wait(20, MSEC) 
 
     motorL1.stop()
     motorL2.stop()
@@ -153,17 +211,37 @@ def go_to_point(target_x, target_y):
 
 
 def autonomous():
+    
+
+
+    IMU.calibrate()
+    while IMU.is_calibrating():
+        wait(20, MSEC)
+
+    IMU.reset_heading()
+
+    turn_to_angle(90)
+    wait(2, SECONDS)
+    turn_to_angle(0)
+    wait(2, SECONDS)
+    turn_to_angle(-90)
+    
+    '''
+    rotation_sensor.reset_position()
+    IMU.reset_heading()
+
+    global x, y, theta, prev_deg
+    x = 0
+    y = 0
+    theta = 0
+    prev_deg = 0
+
     brain.screen.clear_screen()
     brain.screen.print("autonomous code")
-
+    
     #a standard vex field is 12ft by 12ft, which is 144 inches by 144 inches, so the max distance the robot can travel in one direction is 144 inches but we are positioned at the bottom middle so we account for that value being at (72,0)
-    go_to_point(72, 144)
-    go_to_point(-72, 144)
-    go_to_point(-72, 0)
-    go_to_point(72, 0)
-
-    #test auto
-
+    drive_straight(30)
+    '''
 
 def user_control():
     brain.screen.clear_screen()
@@ -232,6 +310,8 @@ comp = Competition(user_control, autonomous)
 brain.screen.clear_screen()
 
 # run the drive task as a separate thread so that it can run at the same time as the user control and autonomous functions
+
+
 #task2 = Thread(autonomous)
 task1 = Thread(drive_task)
 task3 = Thread(intake_task)
